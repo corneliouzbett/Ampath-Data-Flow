@@ -1,12 +1,23 @@
 from pyspark.sql import SQLContext
 from pyspark import SparkContext, SparkConf
 from pyspark.sql.functions import lit
+from pyspark.sql.types import StringType
 
 import os
 import re
 
 SUBMIT_ARGS = "--jars ~/Downloads/mysql-connector-java-5.1.45-bin.jar pyspark-shell"
 os.environ["PYSPARK_SUBMIT_ARGS"] = SUBMIT_ARGS
+
+def searchObsValue(obs, concept):
+    try:
+        found = re.search('## !!'+concept+'=(.+?)!! ##',obs)
+    except AttributeError:
+        found = 'null'
+    return found
+
+def udfRegistration(sqlContext):
+    sqlContext.registerFunction("GetValues",searchObsValue, StringType())
 
 # create spark context
 def create_spark_context(name):
@@ -34,7 +45,7 @@ def create_sql_context(spark_context):
     return SQLContext(spark_context)
 
 def generate_flat_obs_dataframe(sqlContext):
-
+    print('========================== create flat obs data frame ========================')
     return sqlContext.read\
     .format('jdbc')\
     .options(
@@ -53,19 +64,108 @@ def generate_flat_obs_dataframe(sqlContext):
 def print_sql_schema(df):
     df.printSchema()
 
-def generate_general_oncology_df(flat_obs, sqlContext):
+def generate_general_oncology_df(sqlContext, flat_obs):
+    print('========================== create flat obs temporary view ========================')
     flat_obs.createGlobalTempView("flat_obs_temp")
-    general_oncology_df = sqlContext.sql(
+    gen_onc_df = sqlContext.sql(
         """
             SELECT * FROM global_temp.flat_obs_temp where encounter_type in (38, 39)
         """
     )
-    general_oncology_df.show()
+    gen_onc_df.printSchema()
+    return gen_onc_df
 
 
+def process_general_oncology_df(sqlContext, gen_onc_df):
+    print('========================== create general oncology temporary view ========================')
+    gen_onc_df.createGlobalTempView("general_onc_temp")
+    proccesed_gen_onc_df = sqlContext.sql("""
+    select person_id, encounter_id, encounter_type,location_id,obs,
+                            case
+                                when obs rlike "!!1834=1068!!" then 1
+                                when obs rlike "!!1834=7850!!" then 2
+                                when obs rlike "!!1834=1246!!" then 3
+                                when obs rlike "!!1834=2345!!" then 4
+                                when obs rlike "!!1834=10037!!" then 5
+                                else null
+                            end as cur_visit_type,
+                            case
+								when obs  rlike "!!6584=1115!!" then 1
+								when obs  rlike "!!6584=6585!!" then 2
+                                when obs  rlike "!!6584=6586!!" then 3
+                                when obs  rlike "!!6584=6587!!" then 4
+                                when obs  rlike "!!6584=6588!!" then 5
+								else null
+							end as ecog_performance,
+                             case
+								when obs  rlike "!!1119=1115!!" then 1
+								when obs  rlike "!!1119=5201!!" then 2
+                                when obs  rlike "!!1119=5245!!" then 3
+                                when obs  rlike "!!1119=215!!" then 4
+                                when obs  rlike "!!1119=589!!" then 5
+								else null
+							end as general_exam,
+                            case
+								when obs  rlike "!!1122=1118!!" then 1
+								when obs  rlike "!!1122=1115!!" then 2
+                                when obs  rlike "!!1122=5192!!" then 3
+                                when obs  rlike "!!1122=516!!" then 4
+                                when obs  rlike "!!1122=513!!" then 5
+                                when obs  rlike "!!1122=5170!!" then 6
+                                when obs  rlike "!!1122=5334!!" then 7
+                                when obs  rlike "!!1122=6672!!" then 8
+								else null
+							end as HEENT,
+                            case
+								when obs  rlike "!!6251=1115!!" then 1
+								when obs  rlike "!!6251=9689!!" then 2
+                                when obs  rlike "!!6251=9690!!" then 3
+                                when obs  rlike "!!6251=9687!!" then 4
+                                when obs  rlike "!!6251=9688!!" then 5
+                                when obs  rlike "!!6251=5313!!" then 6
+                                when obs  rlike "!!6251=6493!!" then 7
+                                when obs  rlike "!!6251=6250!!" then 8
+								else null
+							end as breast_findings,
+                            case
+								when obs  rlike "!!9696=5141!!" then 1
+								when obs  rlike "!!9696=5139!!" then 2
+								else null
+							end as breast_finding_location,
+                            
+                            case
+								when obs  rlike "!!1123=1118!!" then 1
+								when obs  rlike "!!1123=1115!!" then 2
+                                when obs  rlike "!!1123=5138!!" then 3
+								when obs  rlike "!!1123=5115!!" then 4
+                                when obs  rlike "!!1123=5116!!" then 5
+                                when obs  rlike "!!1123=5181!!" then 6
+                                when obs  rlike "!!1123=5127!!" then 7
+								else null
+							end as chest,
+                             case
+								when obs  rlike "!!1124=1118!!" then 1
+								when obs  rlike "!!1124=1115!!" then 2
+                                when obs  rlike "!!1124=1117!!" then 3
+								when obs  rlike "!!1124=550!!" then 4
+                                when obs  rlike "!!1124=5176!!" then 5
+                                when obs  rlike "!!1124=5162!!" then 6
+                                when obs  rlike "!!1124=5164!!" then  7
+								else null
+							end as heart,
+                            case
+								when obs rlike "!!7191=" then GetValues(obs,7191) 
+								else null
+							end as diagnosis_results
+      from global_temp.general_onc_temp
+    """)
 
-sc = create_spark_context('General Oncology Program')
-sqlc = create_sql_context(sc)
-flat_obs = generate_flat_obs_dataframe(sqlc)
-print_sql_schema(flat_obs)
-generate_general_oncology_df(flat_obs,sqlc )
+    proccesed_gen_onc_df.drop('obs')
+    proccesed_gen_onc_df.show()
+    return proccesed_gen_onc_df
+
+# sc = create_spark_context('General Oncology Program')
+# sqlc = create_sql_context(sc)
+# flat_obs = generate_flat_obs_dataframe(sqlc)
+# print_sql_schema(flat_obs)
+# generate_general_oncology_df(flat_obs,sqlc)
