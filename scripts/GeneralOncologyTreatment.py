@@ -5,6 +5,11 @@ from pyspark.sql.types import StringType
 
 import os
 import re
+import sys
+import json
+
+with open('../../config/config.json', 'r') as f:
+    config = json.load(f)
 
 SUBMIT_ARGS = "--jars ~/Downloads/mysql-connector-java-5.1.45-bin.jar pyspark-shell"
 os.environ["PYSPARK_SUBMIT_ARGS"] = SUBMIT_ARGS
@@ -17,8 +22,7 @@ def searchObsValue(obs, concept):
     return found
 
 def udfRegistration(sqlContext):
-    sqlContext.registerFunction("GetValues",searchObsValue, StringType())
-
+    sqlContext.registerFunction("GetValues",searchObsValue)
 # create spark context
 def create_spark_context(name):
     sc_conf = SparkConf()
@@ -49,11 +53,11 @@ def generate_flat_obs_dataframe(sqlContext):
     return sqlContext.read\
     .format('jdbc')\
     .options(
-        url = 'jdbc:mysql://10.50.80.45:3309/etl',
-        driver = 'com.mysql.jdbc.Driver',
-        dbtable = 'flat_obs',
-        user = 'fmaiko',
-        password = 'Ampath123' )\
+        url = config['DATABASE_CONFIG']['url'],
+        driver = config['DATABASE_CONFIG']['driver'],
+        dbtable = config['DATABASE_CONFIG']['dbtable'],
+        user = config['DATABASE_CONFIG']['user'],
+        password = config['DATABASE_CONFIG']['password'] )\
     .option('partitionColumn', 'encounter_id')\
     .option('numPartitions', 500)\
     .option('fetchsize', 5000)\
