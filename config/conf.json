@@ -1,0 +1,13 @@
+{
+    "DATABASE_CONFIG": {
+      "connectionLimit": 20,
+      "host": "your host",
+      "port": "port",
+      "url": "your url",
+      "driver": "mysql driver",
+      "dbtable": "table name",
+      "user": "user",
+      "password": "password",
+      "multipleStatements": true
+    }
+  }
