@@ -8,6 +8,8 @@ import re
 import sys
 import json
 
+from shared.MysqlDb import MysqlHelper
+
 with open('../../config/config.json', 'r') as f:
     config = json.load(f)
 
@@ -163,13 +165,34 @@ def process_general_oncology_df(sqlContext, gen_onc_df):
 							end as diagnosis_results
       from global_temp.general_onc_temp
     """)
-
     proccesed_gen_onc_df.drop('obs')
-    proccesed_gen_onc_df.show()
+    proccesed_gen_onc_df.schema
+    # proccesed_gen_onc_df.show()
     return proccesed_gen_onc_df
+
+def create_general_oncology_treatment_table(query):
+    mysql_helper = MysqlHelper()
+    mysql_helper.execute_query(query)
+
+
+def save_processed_data_into_db(proccesed_df):
+    proccesed_df.drop(proccesed_df.obs)
+    proccesed_df.write\
+    .format('jdbc')\
+    .options(
+        url = config['DATABASE_CONFIG']['url'],
+        driver = config['DATABASE_CONFIG']['driver'],
+        dbtable = config['GENERAL_ONCOLOGY']['dbtable'],
+        user = config['DATABASE_CONFIG']['user'],
+        password = config['DATABASE_CONFIG']['password'] )\
+    .mode('append')\
+    .save()
 
 # sc = create_spark_context('General Oncology Program')
 # sqlc = create_sql_context(sc)
 # flat_obs = generate_flat_obs_dataframe(sqlc)
 # print_sql_schema(flat_obs)
 # generate_general_oncology_df(flat_obs,sqlc)
+
+def insert_gen_onc_data_into_db(gen_onc_df):
+    gen_onc_df.createGlobalTempView()
