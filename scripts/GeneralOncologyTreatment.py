@@ -48,7 +48,8 @@ def create_spark_context(name):
 
 # create spark sql context
 def create_sql_context(spark_context):
-    return SQLContext(spark_context)
+    print('creating sql context')
+    #return SQLContext(spark_context)
 
 def generate_flat_obs_dataframe(sqlContext):
     print('========================== create flat obs data frame ========================')
