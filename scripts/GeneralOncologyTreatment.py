@@ -9,6 +9,7 @@ import sys
 import json
 
 from shared.MysqlDb import MysqlHelper
+from udf import udf.functions as f
 
 with open('../../config/config.json', 'r') as f:
     config = json.load(f)
@@ -16,15 +17,9 @@ with open('../../config/config.json', 'r') as f:
 SUBMIT_ARGS = "--jars ~/Downloads/mysql-connector-java-5.1.45-bin.jar pyspark-shell"
 os.environ["PYSPARK_SUBMIT_ARGS"] = SUBMIT_ARGS
 
-def searchObsValue(obs, concept):
-    try:
-        found = re.search('## !!'+concept+'=(.+?)!! ##',obs)
-    except AttributeError:
-        found = 'null'
-    return found
 
 def udfRegistration(sqlContext):
-    sqlContext.registerFunction("GetValues",searchObsValue)
+    sqlContext.registerFunction("GetValues",f.searchObsValue)
 # create spark context
 def create_spark_context(name):
     sc_conf = SparkConf()
