@@ -8,8 +8,8 @@ import re
 import sys
 import json
 
-from shared.MysqlDb import MysqlHelper
-from udf import udf.functions as f
+#from shared.MysqlDb import MysqlHelper
+from udf import functions as udf
 
 with open('../../config/config.json', 'r') as f:
     config = json.load(f)
@@ -19,7 +19,7 @@ os.environ["PYSPARK_SUBMIT_ARGS"] = SUBMIT_ARGS
 
 
 def udfRegistration(sqlContext):
-    sqlContext.registerFunction("GetValues",f.searchObsValue)
+    sqlContext.registerFunction("GetValues",udf.searchObsValue)
 # create spark context
 def create_spark_context(name):
     sc_conf = SparkConf()
@@ -166,9 +166,9 @@ def process_general_oncology_df(sqlContext, gen_onc_df):
     # proccesed_gen_onc_df.show()
     return proccesed_gen_onc_df
 
-def create_general_oncology_treatment_table(query):
-    mysql_helper = MysqlHelper()
-    mysql_helper.execute_query(query)
+#def create_general_oncology_treatment_table(query):
+#    mysql_helper = MysqlHelper()
+#    mysql_helper.execute_query(query)
 
 
 def save_processed_data_into_db(proccesed_df):
@@ -184,11 +184,11 @@ def save_processed_data_into_db(proccesed_df):
     .mode('append')\
     .save()
 
-# sc = create_spark_context('General Oncology Program')
-# sqlc = create_sql_context(sc)
-# flat_obs = generate_flat_obs_dataframe(sqlc)
-# print_sql_schema(flat_obs)
-# generate_general_oncology_df(flat_obs,sqlc)
+sc = create_spark_context('General Oncology Program')
+sqlc = create_sql_context(sc)
+flat_obs = generate_flat_obs_dataframe(sqlc)
+print_sql_schema(flat_obs)
+generate_general_oncology_df(flat_obs,sqlc)
 
 def insert_gen_onc_data_into_db(gen_onc_df):
     gen_onc_df.createGlobalTempView()
