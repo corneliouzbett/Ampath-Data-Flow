@@ -6,12 +6,11 @@
 import sys
 import airflow
 from airflow import DAG
+from datetime import timedelta
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 
 sys.path.append('../../scripts/')
-
-import GeneralOncologyTreatment
 
 default_args = {
     'owner': 'corneliouzbett',
@@ -44,7 +43,7 @@ dag = DAG(
     schedule_interval=timedelta(days=1),
 )
 
-t1 = = BashOperator(
+t1 = BashOperator(
     task_id='sleep',
     depends_on_past=False,
     bash_command='spark-submit --jars ~/Downloads/mysql-connector-java-5.1.45-bin.jar GeneralOncologyTreatment.py',
