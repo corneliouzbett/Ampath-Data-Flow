@@ -1,6 +1,8 @@
-##
-# general oncology treatment dag
-##
+"""
+### General oncology treatment
+ it extract general oncology data from flat obs
+
+"""
 import sys
 import airflow
 from airflow import DAG
@@ -14,7 +16,7 @@ import GeneralOncologyTreatment
 default_args = {
     'owner': 'corneliouzbett',
     'depends_on_past': False,
-    'start_date': airflow.utils.dates.days_ago(2),
+    'start_date': airflow.utils.dates.days_ago(1),
     'email': ['kibett@ampath.or.ke'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -42,48 +44,19 @@ dag = DAG(
     schedule_interval=timedelta(days=1),
 )
 
-query = """create table if not exists spark_general_oncology_treatment (
-							date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                            person_id int,
-							encounter_id int,
-							encounter_type int,
-							encounter_datetime datetime,
-							visit_id int,
-							location_id int,
-							location_uuid varchar (100),
-							gender char (100),
-							age int,
-                            cur_visit_type INT,
-							ecog_performance INT,
-							general_exam INT,
-							heent INT,
-							breast_findings INT,
-							breast_finding_location INT,
-							breast_findingquadrant INT,
-							chest INT,
-							heart INT,
-							diagnosis_results varchar(500)
-						);"""
-
-t1 = PythonOperator(
-    task_id ='spark session',
-    python_callable ='GeneralOncologyTreatment.create_spark_context',
-	op_kwargs = {'name': "General Oncology treatment"},
+t1 = = BashOperator(
+    task_id='sleep',
+    depends_on_past=False,
+    bash_command='spark-submit --jars ~/Downloads/mysql-connector-java-5.1.45-bin.jar GeneralOncologyTreatment.py',
     dag=dag,
 )
 
 t1.doc_md = """\
-#### Task Documentation
+#### General oncology Documentation
 creating spark context
 """
 
 dag.doc_md = __doc__
-
-t2 = PythonOperator(
-    task_id ='sql context',
-    python_callable ='GeneralOncologyTreatment.create_sql_context',
-    dag=dag,
-)
 
 # sc = GeneralOncologyTreatment.create_spark_context('General Oncology Program')
 # sqlc = GeneralOncologyTreatment.create_sql_context(sc)
@@ -98,4 +71,4 @@ t2 = PythonOperator(
 # GeneralOncologyTreatment.create_general_oncology_treatment_table(query)
 # GeneralOncologyTreatment.save_processed_data_into_db(proccesed)
 
-t1 >> t2
+t1

@@ -9,17 +9,25 @@ import sys
 import json
 
 #from shared.MysqlDb import MysqlHelper
-from udf import functions as udf
+#from udf import functions as udf
 
-with open('../../config/config.json', 'r') as f:
+#with open('../../config/config.json') as f:
+with open('/home/corneliouzbett/Documents/projects/Ampath-Data-Flow/config/config.json') as f:
     config = json.load(f)
 
 SUBMIT_ARGS = "--jars ~/Downloads/mysql-connector-java-5.1.45-bin.jar pyspark-shell"
 os.environ["PYSPARK_SUBMIT_ARGS"] = SUBMIT_ARGS
 
-
+def searchObsValue(obs, concept):
+    try:
+        found = re.search('## !!'+concept+'=(.+?)!! ##',obs)
+    except AttributeError:
+        found = 'null'
+    return found
+  
 def udfRegistration(sqlContext):
-    sqlContext.registerFunction("GetValues",udf.searchObsValue)
+    sqlContext.registerFunction("GetValues",searchObsValue)
+
 # create spark context
 def create_spark_context(name):
     sc_conf = SparkConf()
@@ -44,7 +52,7 @@ def create_spark_context(name):
 # create spark sql context
 def create_sql_context(spark_context):
     print('creating sql context')
-    #return SQLContext(spark_context)
+    return SQLContext(spark_context)
 
 def generate_flat_obs_dataframe(sqlContext):
     print('========================== create flat obs data frame ========================')
@@ -154,11 +162,7 @@ def process_general_oncology_df(sqlContext, gen_onc_df):
                                 when obs  rlike "!!1124=5162!!" then 6
                                 when obs  rlike "!!1124=5164!!" then  7
 								else null
-							end as heart,
-                            case
-								when obs rlike "!!7191=" then GetValues(obs,7191) 
-								else null
-							end as diagnosis_results
+							end as heart
       from global_temp.general_onc_temp
     """)
     proccesed_gen_onc_df.drop('obs')
@@ -184,11 +188,20 @@ def save_processed_data_into_db(proccesed_df):
     .mode('append')\
     .save()
 
+# spark context
+# spark sql context
 sc = create_spark_context('General Oncology Program')
 sqlc = create_sql_context(sc)
+udfRegistration(sqlc)
+
+
 flat_obs = generate_flat_obs_dataframe(sqlc)
 print_sql_schema(flat_obs)
-generate_general_oncology_df(flat_obs,sqlc)
+
+gen_onc = generate_general_oncology_df(sqlc, flat_obs)
+processed_data = process_general_oncology_df(sqlc, gen_onc)
+
+save_processed_data_into_db(processed_data)
 
 def insert_gen_onc_data_into_db(gen_onc_df):
     gen_onc_df.createGlobalTempView()
