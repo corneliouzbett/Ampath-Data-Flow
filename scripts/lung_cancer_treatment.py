@@ -11,9 +11,10 @@ class LungCancerTreatment(AmrsObs):
         print('===================== creating lung cancer treatment dataframe from amrs obs =================================')
         super(LungCancerTreatment, self).generate_obs_dataframe()\
             .createGlobalTempView("lung_cancer_treatment_temp")
+        
         lung_cnr_tr_df = self.sql_context.sql(
             """
-            SELECT * FROM global_temp.lung_cancer_treatment_temp where encounter_id in (169, 170)
+            SELECT * FROM global_temp.lung_cancer_treatment_temp
             """
         )
         lung_cnr_tr_df.printSchema()
