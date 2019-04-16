@@ -61,10 +61,10 @@ def generate_flat_obs_dataframe(sqlContext):
         user = config['DATABASE_CONFIG']['user'],
         password = config['DATABASE_CONFIG']['password'] )\
     .option('partitionColumn', 'encounter_id')\
-    .option('numPartitions', 300)\
+    .option('numPartitions', 350)\
     .option('fetchsize', 5000)\
     .option('lowerBound', 1)\
-    .option('upperBound', 11521481695656862L)\
+    .option('upperBound', 7000000)\
     .load()
 
 def print_sql_schema(df):
@@ -845,7 +845,7 @@ def process_general_oncology_df(sqlContext, gen_onc_df):
 
 def save_processed_data_into_db(proccesed_df):
     proccesed_df.drop(proccesed_df.obs)
-    proccesed_df.write\
+    proccesed_df.coalesce(10).write\
     .format('jdbc')\
     .options(
         url = config['DATABASE_CONFIG']['url'],
@@ -853,11 +853,6 @@ def save_processed_data_into_db(proccesed_df):
         dbtable = config['GENERAL_ONCOLOGY']['dbtable'],
         user = config['DATABASE_CONFIG']['user'],
         password = config['DATABASE_CONFIG']['password'] )\
-    .option('partitionColumn', 'encounter_id')\
-    .option('numPartitions', 300)\
-    .option('fetchsize', 5000)\
-    .option('lowerBound', 1)\
-    .option('upperBound', 11521481695656862L)\
     .mode('append')\
     .save()
 
