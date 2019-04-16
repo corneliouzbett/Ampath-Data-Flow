@@ -8,7 +8,6 @@ class GeneralOncologyTreatment(AmrsObs):
 
 
     def generate_general_oncology_treatment_df(self):
-        print('===================== creating general oncology treatment dataframe from amrs obs =================================')
         super(GeneralOncologyTreatment, self).generate_obs_dataframe()\
             .createGlobalTempView("general_oncology_treatment_temp")
         gen_onc_tr_df = self.sql_context.sql(
