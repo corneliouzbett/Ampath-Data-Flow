@@ -23,7 +23,7 @@ class AmrsObs(object):
                 password = config['DATABASE_CONFIG']['password'] )\
             .option('partitionColumn', 'encounter_id')\
             .option('numPartitions', 1000)\
-            .option('fetchsize', 10000)\
+            .option('fetchsize', 100000)\
             .option('lowerBound', 1)\
             .option('upperBound', 10000000)\
             .load()
